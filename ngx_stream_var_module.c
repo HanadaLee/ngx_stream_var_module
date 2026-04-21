@@ -3168,7 +3168,7 @@ ngx_stream_var_exec_extract_json(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
 {
     ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val, str;
+    ngx_str_t                    val, subkey;
     cJSON                       *json, *current;
     u_char                      *json_data, *key, *result;
     ngx_uint_t                   i;
@@ -3214,23 +3214,24 @@ ngx_stream_var_exec_extract_json(ngx_stream_session_t *s,
 
     for (i = 1; i < rule->args->nelts; i++) {
 
-        if (ngx_stream_complex_value(s, &args[i], &str) != NGX_OK) {
+        if (ngx_stream_complex_value(s, &args[i], &subkey) != NGX_OK) {
             goto failed;
         }
 
-        while (str.len && ngx_stream_var_isspace(str.data[0])) {
+        while (subkey.len && ngx_stream_var_isspace(subkey.data[0])) {
             str.data++;
             str.len--;
         }
 
-        while (str.len && ngx_stream_var_isspace(str.data[str.len - 1])) {
+        while (subkey.len && ngx_stream_var_isspace(subkey.data[str.len - 1])) {
             str.len--;
         }
 
         /* check if it's an array index like [0] or [1] */
-        if (str.len >= 3 && str.data[0] == '[' && str.data[str.len - 1] == ']') {
-
-            index = ngx_atoi(str.data + 1, str.len - 2);
+        if (subkey.len >= 3 && subkey.data[0] == '['
+            && subkey.data[str.len - 1] == ']')
+        {
+            index = ngx_atoi(subkey.data + 1, subkey.len - 2);
 
             if (index == NGX_ERROR) {
                 goto failed;
@@ -3253,13 +3254,13 @@ ngx_stream_var_exec_extract_json(ngx_stream_session_t *s,
                 goto not_found;
             }
 
-            key = ngx_pnalloc(s->connection->pool, str.len + 1);
+            key = ngx_pnalloc(s->connection->pool, subkey.len + 1);
             if (key == NULL) {
                 goto failed;
             }
 
-            ngx_memcpy(key, str.data, str.len);
-            key[str.len] = '\0';
+            ngx_memcpy(key, subkey.data, subkey.len);
+            key[subkey.len] = '\0';
 
             current = cJSON_GetObjectItem(current, (char *) key);
             if (current == NULL) {
