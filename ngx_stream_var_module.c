@@ -2814,7 +2814,7 @@ ngx_stream_var_exec_repeat(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
 {
     ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val, s;
+    ngx_str_t                    val, str;
     ngx_int_t                    times;
     u_char                      *p;
     ngx_uint_t                   i;
@@ -3168,7 +3168,7 @@ ngx_stream_var_exec_extract_json(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
 {
     ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val, s;
+    ngx_str_t                    val, str;
     cJSON                       *json, *current;
     u_char                      *json_data, *key, *result;
     ngx_uint_t                   i;
@@ -3455,7 +3455,7 @@ ngx_stream_var_exec_regex_sub(ngx_stream_session_t *s,
     }
 
     /* ensure captures are available */
-    if (r->ncaptures < 2) {
+    if (s->ncaptures < 2) {
         ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
                       "var: insufficient captures");
         return NGX_ERROR;
@@ -3465,8 +3465,8 @@ ngx_stream_var_exec_regex_sub(ngx_stream_session_t *s,
         return NGX_ERROR;
     }
 
-    start = r->captures[0];
-    end = r->captures[1];
+    start = s->captures[0];
+    end = s->captures[1];
 
     len = start + replacement.len + (val.len - end);
 
@@ -6153,7 +6153,7 @@ ngx_stream_var_exec_gmt_time(ngx_stream_session_t *s,
             return NGX_ERROR;
         }
 
-        v->len = ngx_stream_time(p, ts) - p;
+        v->len = ngx_http_time(p, ts) - p;
         v->data = p;
 
         return NGX_OK;
@@ -6165,7 +6165,7 @@ ngx_stream_var_exec_gmt_time(ngx_stream_session_t *s,
             return NGX_ERROR;
         }
 
-        v->len = ngx_stream_cookie_time(p, ts) - p;
+        v->len = ngx_http_cookie_time(p, ts) - p;
         v->data = p;
 
         return NGX_OK;
