@@ -3219,17 +3219,17 @@ ngx_stream_var_exec_extract_json(ngx_stream_session_t *s,
         }
 
         while (subkey.len && ngx_stream_var_isspace(subkey.data[0])) {
-            str.data++;
-            str.len--;
+            subkey.data++;
+            subkey.len--;
         }
 
-        while (subkey.len && ngx_stream_var_isspace(subkey.data[str.len - 1])) {
-            str.len--;
+        while (subkey.len && ngx_stream_var_isspace(subkey.data[subkey.len - 1])) {
+            subkey.len--;
         }
 
         /* check if it's an array index like [0] or [1] */
         if (subkey.len >= 3 && subkey.data[0] == '['
-            && subkey.data[str.len - 1] == ']')
+            && subkey.data[subkey.len - 1] == ']')
         {
             index = ngx_atoi(subkey.data + 1, subkey.len - 2);
 
