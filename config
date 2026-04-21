@@ -1,0 +1,33 @@
+ngx_addon_name=ngx_stream_var_module
+
+# Check for cJSON library
+ngx_feature="cJSON library"
+ngx_feature_name="NGX_HAVE_CJSON"
+ngx_feature_run=no
+ngx_feature_incs="#include <cjson/cJSON.h>"
+ngx_feature_path=
+ngx_feature_libs="-lcjson"
+ngx_feature_test="cJSON *json = cJSON_Parse(\"{}\"); if (json) cJSON_Delete(json);"
+. auto/feature
+
+if [ $ngx_found = yes ]; then
+    CORE_LIBS="$CORE_LIBS $ngx_feature_libs"
+    have=NGX_HAVE_CJSON . auto/have
+else
+    cat << END
+
+$0: warning: cJSON library not found, extract_json operation will not be available
+
+END
+fi
+
+if [ $ngx_module_link = DYNAMIC ]; then
+    ngx_module_type=STREAM
+    ngx_module_name=ngx_stream_var_module
+    ngx_module_srcs="$ngx_addon_dir/ngx_stream_var_module.c"
+
+    . auto/module
+else
+    STREAM_MODULES="$STREAM_MODULES ngx_stream_var_module"
+    NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_stream_var_module.c"
+fi
