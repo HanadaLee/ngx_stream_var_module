@@ -53,6 +53,8 @@ typedef enum {
     NGX_STREAM_VAR_OP_SUBSTR,
     NGX_STREAM_VAR_OP_REPLACE,
     NGX_STREAM_VAR_OP_EXTRACT_PARAM,
+    NGX_STREAM_VAR_OP_KEEP_PARAMS,
+    NGX_STREAM_VAR_OP_REMOVE_PARAMS,
 
 #if (NGX_HAVE_CJSON)
     NGX_STREAM_VAR_OP_EXTRACT_JSON,
@@ -214,6 +216,9 @@ static ngx_int_t ngx_stream_var_utils_escape_uri(ngx_stream_session_t *s,
     ngx_uint_t type);
 static u_char *ngx_stream_var_utils_strlstrn(u_char *s1, u_char *last,
     u_char *s2, size_t n);
+static ngx_int_t ngx_stream_var_utils_filter_params(ngx_stream_session_t *s,
+    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule,
+    ngx_uint_t keep);
 
 #if (NGX_STREAM_SSL)
 static ngx_int_t ngx_stream_var_utils_sha(ngx_stream_session_t *s,
@@ -277,6 +282,10 @@ static ngx_int_t ngx_stream_var_exec_substr(ngx_stream_session_t *s,
 static ngx_int_t ngx_stream_var_exec_replace(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 static ngx_int_t ngx_stream_var_exec_extract_param(ngx_stream_session_t *s,
+    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
+static ngx_int_t ngx_stream_var_exec_keep_params(ngx_stream_session_t *s,
+    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
+static ngx_int_t ngx_stream_var_exec_remove_params(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 
 #if (NGX_HAVE_CJSON)
@@ -455,7 +464,9 @@ static ngx_stream_var_operator_enum_t  ngx_stream_var_operators[] = {
     { ngx_string("repeat"),           NGX_STREAM_VAR_OP_REPEAT,        2, 2  },
     { ngx_string("substr"),           NGX_STREAM_VAR_OP_SUBSTR,        2, 3  },
     { ngx_string("replace"),          NGX_STREAM_VAR_OP_REPLACE,       3, 3  },
-    { ngx_string("extract_param"),    NGX_STREAM_VAR_OP_EXTRACT_PARAM, 2, 4  },
+    { ngx_string("extract_param"),    NGX_STREAM_VAR_OP_EXTRACT_PARAM, 4, 4  },
+    { ngx_string("keep_params"),      NGX_STREAM_VAR_OP_KEEP_PARAMS,   4, 99 },
+    { ngx_string("remove_params"),    NGX_STREAM_VAR_OP_REMOVE_PARAMS, 4, 99 },
 
 #if (NGX_HAVE_CJSON)
     { ngx_string("extract_json"),     NGX_STREAM_VAR_OP_EXTRACT_JSON,  2, 99 },
@@ -1174,6 +1185,12 @@ ngx_stream_var_evaluate_rule(ngx_stream_session_t *s,
     case NGX_STREAM_VAR_OP_EXTRACT_PARAM:
         return ngx_stream_var_exec_extract_param(s, v, rule);
 
+    case NGX_STREAM_VAR_OP_KEEP_PARAMS:
+        return ngx_stream_var_exec_keep_params(s, v, rule);
+
+    case NGX_STREAM_VAR_OP_REMOVE_PARAMS:
+        return ngx_stream_var_exec_remove_params(s, v, rule);
+
 #if (NGX_HAVE_CJSON)
     case NGX_STREAM_VAR_OP_EXTRACT_JSON:
         return ngx_stream_var_exec_extract_json(s, v, rule);
@@ -1880,6 +1897,238 @@ ngx_stream_var_utils_strlstrn(u_char *s1, u_char *last, u_char *s2, size_t n)
     } while (ngx_strncmp(s1, s2, n) != 0);
 
     return --s1;
+}
+
+
+static ngx_int_t
+ngx_stream_var_utils_filter_params(ngx_stream_session_t *s,
+    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule,
+    ngx_uint_t keep)
+{
+    ngx_stream_complex_value_t  *args;
+    ngx_str_t                    val;
+    ngx_str_t                   *key_elts;
+    u_char                      *p, *last, *eq, *next_sep;
+    ngx_uint_t                   j, found, first;
+    size_t                       len;
+    u_char                      *result, *dst;
+    ngx_str_t                    key;
+
+    args = rule->args->elts;
+
+    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    /* Evaluate all args */
+    key_elts = ngx_palloc(s->connection->pool,
+                          rule->args->nelts * sizeof(ngx_str_t));
+    if (key_elts == NULL) {
+        return NGX_ERROR;
+    }
+
+    for (j = 0; j < rule->args->nelts; j++) {
+        if (ngx_stream_complex_value(s, &args[j], &key_elts[j]) != NGX_OK) {
+            return NGX_ERROR;
+        }
+    }
+
+    /* separator and delimiter are required */
+    if (key_elts[1].len != 1) {
+        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
+                      "var: invalid separator: \"%V\"",
+                      &key_elts[1]);
+        v->not_found = 1;
+        return NGX_OK;
+    }
+
+    if (key_elts[2].len != 1) {
+        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
+                      "var: invalid delimiter: \"%V\"",
+                      &key_elts[2]);
+        v->not_found = 1;
+        return NGX_OK;
+    }
+
+    if (val.len == 0) {
+        v->not_found = 1;
+        return NGX_OK;
+    }
+
+    /* First pass: calculate result length */
+    len = 0;
+    first = 1;
+    p = val.data;
+    last = val.data + val.len;
+
+    while (p < last) {
+        /* Find next separator */
+        next_sep = ngx_strlchr(p, last, key_elts[1].data[0]);
+        if (next_sep == NULL) {
+            next_sep = last;
+        }
+
+        /* Skip empty segments */
+        if (p == next_sep) {
+            p = next_sep + 1;
+            continue;
+        }
+
+        /* Find delimiter in this segment */
+        eq = ngx_strlchr(p, next_sep, key_elts[2].data[0]);
+
+        /* Extract param name (trim spaces) */
+        key.data = p;
+        if (eq == NULL) {
+            key.len = next_sep - p;
+        } else {
+            key.len = eq - p;
+        }
+
+        while (key.len && ngx_stream_var_isspace(key.data[0])) {
+            key.data++;
+            key.len--;
+        }
+
+        while (key.len && ngx_stream_var_isspace(key.data[key.len - 1])) {
+            key.len--;
+        }
+
+        if (key.len == 0) {
+            p = next_sep + 1;
+            continue;
+        }
+
+        /* Check if key is in the list */
+        found = 0;
+        for (j = 3; j < rule->args->nelts; j++) {
+            if (key.len == key_elts[j].len) {
+                if (rule->ignore_case) {
+                    if (ngx_strncasecmp(key.data, key_elts[j].data, key.len)
+                        == 0)
+                    {
+                        found = 1;
+                        break;
+                    }
+
+                } else {
+                    if (ngx_strncmp(key.data, key_elts[j].data, key.len)
+                        == 0)
+                    {
+                        found = 1;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ((keep && found) || (!keep && !found)) {
+            if (!first) {
+                len += 1; /* separator */
+            }
+            len += next_sep - p;
+            first = 0;
+        }
+
+        if (next_sep == last) {
+            break;
+        }
+        p = next_sep + 1;
+    }
+
+    if (first) {
+        /* No params matched */
+        v->len = 0;
+        v->data = (u_char *) "";
+        return NGX_OK;
+    }
+
+    /* Second pass: build result */
+    result = ngx_pnalloc(s->connection->pool, len);
+    if (result == NULL) {
+        return NGX_ERROR;
+    }
+
+    dst = result;
+    first = 1;
+    p = val.data;
+    last = val.data + val.len;
+
+    while (p < last) {
+        next_sep = ngx_strlchr(p, last, key_elts[1].data[0]);
+        if (next_sep == NULL) {
+            next_sep = last;
+        }
+
+        if (p == next_sep) {
+            p = next_sep + 1;
+            continue;
+        }
+
+        eq = ngx_strlchr(p, next_sep, key_elts[2].data[0]);
+
+        key.data = p;
+        if (eq == NULL) {
+            key.len = next_sep - p;
+        } else {
+            key.len = eq - p;
+        }
+
+        while (key.len && ngx_stream_var_isspace(key.data[0])) {
+            key.data++;
+            key.len--;
+        }
+
+        while (key.len && ngx_stream_var_isspace(key.data[key.len - 1])) {
+            key.len--;
+        }
+
+        if (key.len == 0) {
+            p = next_sep + 1;
+            continue;
+        }
+
+        found = 0;
+        for (j = 3; j < rule->args->nelts; j++) {
+            if (key.len == key_elts[j].len) {
+                if (rule->ignore_case) {
+                    if (ngx_strncasecmp(key.data, key_elts[j].data, key.len)
+                        == 0)
+                    {
+                        found = 1;
+                        break;
+                    }
+
+                } else {
+                    if (ngx_strncmp(key.data, key_elts[j].data, key.len)
+                        == 0)
+                    {
+                        found = 1;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ((keep && found) || (!keep && !found)) {
+            if (!first) {
+                *dst++ = key_elts[1].data[0];
+            }
+            ngx_memcpy(dst, p, next_sep - p);
+            dst += next_sep - p;
+            first = 0;
+        }
+
+        if (next_sep == last) {
+            break;
+        }
+        p = next_sep + 1;
+    }
+
+    v->len = dst - result;
+    v->data = result;
+
+    return NGX_OK;
 }
 
 
@@ -3027,7 +3276,49 @@ ngx_stream_var_exec_extract_param(ngx_stream_session_t *s,
 
     args = rule->args->elts;
 
-    if (ngx_stream_complex_value(s, &args[0], &name) != NGX_OK) {
+    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    while (val.len && ngx_stream_var_isspace(val.data[0])) {
+        val.data++;
+        val.len--;
+    }
+
+    while (val.len && ngx_stream_var_isspace(val.data[val.len - 1])) {
+        val.len--;
+    }
+
+    if (val.len == 0) {
+        v->not_found = 1;
+        return NGX_OK;
+    }
+
+    if (ngx_stream_complex_value(s, &args[1], &separator) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    if (separator.len != 1) {
+        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
+                      "var: invalid separator: \"%V\"",
+                      &separator);
+        v->not_found = 1;
+        return NGX_OK;
+    }
+
+    if (ngx_stream_complex_value(s, &args[2], &delimiter) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    if (delimiter.len != 1) {
+        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
+                      "var: invalid delimiter: \"%V\"",
+                      &delimiter);
+        v->not_found = 1;
+        return NGX_OK;
+    }
+
+    if (ngx_stream_complex_value(s, &args[3], &name) != NGX_OK) {
         return NGX_ERROR;
     }
 
@@ -3043,57 +3334,6 @@ ngx_stream_var_exec_extract_param(ngx_stream_session_t *s,
     if (name.len == 0) {
         v->not_found = 1;
         return NGX_OK;
-    }
-
-    if (ngx_stream_complex_value(s, &args[1], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    while (val.len && ngx_stream_var_isspace(val.data[0])) {
-        val.data++;
-        val.len--;
-    }
-
-    while (val.len && ngx_stream_var_isspace(val.data[val.len - 1]))
-    {
-        val.len--;
-    }
-
-    if (val.len == 0) {
-        v->not_found = 1;
-        return NGX_OK;
-    }
-
-    if (rule->args->nelts > 2) {
-        if (ngx_stream_complex_value(s, &args[2], &separator) != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-        if (separator.len != 1) {
-            ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                          "var: invalid separator: \"%V\"",
-                          &separator);
-            ngx_str_set(&separator, "&");
-        }
-
-    } else {
-        ngx_str_set(&separator, "&");
-    }
-
-    if (rule->args->nelts == 4) {
-        if (ngx_stream_complex_value(s, &args[3], &delimiter) != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-        if (delimiter.len != 1) {
-            ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                          "var: invalid delimiter: \"%V\"",
-                          &delimiter);
-            ngx_str_set(&delimiter, "=");
-        }
-
-    } else {
-        ngx_str_set(&delimiter, "=");
     }
 
     sep = separator.data[0];
@@ -3158,6 +3398,22 @@ ngx_stream_var_exec_extract_param(ngx_stream_session_t *s,
 
     v->not_found = 1;
     return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_stream_var_exec_keep_params(ngx_stream_session_t *s,
+    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
+{
+    return ngx_stream_var_utils_filter_params(s, v, rule, 1);
+}
+
+
+static ngx_int_t
+ngx_stream_var_exec_remove_params(ngx_stream_session_t *s,
+    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
+{
+    return ngx_stream_var_utils_filter_params(s, v, rule, 0);
 }
 
 
