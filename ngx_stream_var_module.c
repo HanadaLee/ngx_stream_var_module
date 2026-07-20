@@ -15,7 +15,7 @@
 #include <openssl/hmac.h>
 #endif
 
-#if (NGX_HAVE_CJSON)
+#if (NGX_CJSON)
 #include <cjson/cJSON.h>
 #endif
 
@@ -56,7 +56,7 @@ typedef enum {
     NGX_STREAM_VAR_OP_KEEP_PARAMS,
     NGX_STREAM_VAR_OP_REMOVE_PARAMS,
 
-#if (NGX_HAVE_CJSON)
+#if (NGX_CJSON)
     NGX_STREAM_VAR_OP_EXTRACT_JSON,
 #endif
 
@@ -288,7 +288,7 @@ static ngx_int_t ngx_stream_var_exec_keep_params(ngx_stream_session_t *s,
 static ngx_int_t ngx_stream_var_exec_remove_params(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 
-#if (NGX_HAVE_CJSON)
+#if (NGX_CJSON)
 static ngx_int_t ngx_stream_var_exec_extract_json(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 #endif
@@ -468,7 +468,7 @@ static ngx_stream_var_operator_enum_t  ngx_stream_var_operators[] = {
     { ngx_string("keep_params"),      NGX_STREAM_VAR_OP_KEEP_PARAMS,   4, 99 },
     { ngx_string("remove_params"),    NGX_STREAM_VAR_OP_REMOVE_PARAMS, 4, 99 },
 
-#if (NGX_HAVE_CJSON)
+#if (NGX_CJSON)
     { ngx_string("extract_json"),     NGX_STREAM_VAR_OP_EXTRACT_JSON,  2, 99 },
 #endif
 
@@ -1191,7 +1191,7 @@ ngx_stream_var_evaluate_rule(ngx_stream_session_t *s,
     case NGX_STREAM_VAR_OP_REMOVE_PARAMS:
         return ngx_stream_var_exec_remove_params(s, v, rule);
 
-#if (NGX_HAVE_CJSON)
+#if (NGX_CJSON)
     case NGX_STREAM_VAR_OP_EXTRACT_JSON:
         return ngx_stream_var_exec_extract_json(s, v, rule);
 #endif
@@ -3421,7 +3421,7 @@ ngx_stream_var_exec_remove_params(ngx_stream_session_t *s,
 }
 
 
-#if (NGX_HAVE_CJSON)
+#if (NGX_CJSON)
 
 static ngx_int_t
 ngx_stream_var_exec_extract_json(ngx_stream_session_t *s,
