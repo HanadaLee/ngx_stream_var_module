@@ -10,6 +10,10 @@
 #include <ngx_md5.h>
 #include <ngx_sha1.h>
 
+#if (NGX_CONDITION)
+#include <ngx_stream_condition_module.h>
+#endif
+
 #if (NGX_STREAM_SSL)
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -152,8 +156,12 @@ typedef struct {
     ngx_stream_var_operator_e      operator;    /* operator type */
     ngx_uint_t                     ignore_case; /* ignore case sensitivity */
     ngx_array_t                   *args;        /* operator extra args */
+#if (NGX_CONDITION)
+    ngx_condition_expr_id_t        expr_id;     /* associated expression */
+#else
     ngx_stream_complex_value_t    *filter;      /* filter complex value */
     ngx_uint_t                     negative;    /* negative filter */
+#endif
 
 #if (NGX_PCRE)
     ngx_stream_regex_t            *regex;       /* compiled regex */
@@ -560,7 +568,12 @@ static ngx_stream_var_operator_enum_t  ngx_stream_var_operators[] = {
 static ngx_command_t  ngx_stream_var_commands[] = {
 
     { ngx_string("var"),
-      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_2MORE,
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF
+#if (NGX_CONDITION)
+                           |NGX_STREAM_MAIN_WHEN_CONF
+                           |NGX_STREAM_SRV_WHEN_CONF
+#endif
+                           |NGX_CONF_2MORE,
       ngx_stream_var_create_variable,
       NGX_STREAM_SRV_CONF_OFFSET,
       0,
@@ -675,15 +688,19 @@ ngx_stream_var_create_variable(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_str_t                   *value;
     ngx_uint_t                   cur, last;
+#if !(NGX_CONDITION)
     ngx_str_t                    val;
+#endif
     ngx_stream_variable_t       *v;
     ngx_stream_var_variable_t   *var;
     ngx_stream_var_rule_t       *rule;
     ngx_uint_t                   i;
     ngx_stream_var_operator_e    op;
     ngx_uint_t                   ignore_case, args, min_args, max_args;
+#if !(NGX_CONDITION)
     ngx_stream_complex_value_t  *filter;
     ngx_uint_t                   negative;
+#endif
     ngx_int_t                    index;
 
 #if (NGX_PCRE)
@@ -733,6 +750,18 @@ ngx_stream_var_create_variable(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+#if (NGX_CONDITION)
+    if (cf->args->nelts > 3
+        && (ngx_strncmp(value[last].data, "if=", 3) == 0
+            || ngx_strncmp(value[last].data, "if!=", 4) == 0))
+    {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid parameter \"%V\"", &value[last]);
+        return NGX_CONF_ERROR;
+    }
+
+    args = cf->args->nelts - 3;
+#else
     filter = NULL;
     negative = 0;
     if (cf->args->nelts > 3
@@ -771,6 +800,7 @@ ngx_stream_var_create_variable(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     } else {
         args = cf->args->nelts - 3;
     }
+#endif
 
     cur = 3;
     ignore_case = 0;
@@ -844,8 +874,12 @@ ngx_stream_var_create_variable(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     rule->operator = op;
     rule->ignore_case = ignore_case;
+#if (NGX_CONDITION)
+    rule->expr_id = ngx_condition_get_associated_expr_id(cf);
+#else
     rule->filter = filter;
     rule->negative = negative;
+#endif
 
 #if (NGX_PCRE)
 
@@ -1064,12 +1098,21 @@ ngx_stream_var_find_rule(ngx_stream_session_t *s,
 {
     ngx_stream_var_rule_t      *rules;
     ngx_uint_t                  i;
+#if !(NGX_CONDITION)
     ngx_str_t                   val;
+#endif
 
     rules = var->rules->elts;
 
     for (i = 0; i < var->rules->nelts; i++) {
 
+#if (NGX_CONDITION)
+        if (ngx_stream_condition_get_expr_result(s, rules[i].expr_id)
+            != NGX_CONDITION_EXPR_HIT)
+        {
+            continue;
+        }
+#else
         if (rules[i].filter) {
 
             if (ngx_stream_complex_value(s, rules[i].filter, &val)
@@ -1091,6 +1134,7 @@ ngx_stream_var_find_rule(ngx_stream_session_t *s,
                 }
             }
         }
+#endif
 
         *rule = &rules[i];
 
