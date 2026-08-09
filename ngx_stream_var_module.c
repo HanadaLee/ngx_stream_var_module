@@ -29,21 +29,7 @@
 
 
 typedef enum {
-    NGX_STREAM_VAR_OP_AND = 0,
-    NGX_STREAM_VAR_OP_OR,
-    NGX_STREAM_VAR_OP_NOT,
-
-    NGX_STREAM_VAR_OP_IS_EMPTY,
-    NGX_STREAM_VAR_OP_IS_NOT_EMPTY,
-    NGX_STREAM_VAR_OP_IS_NUM,
-    NGX_STREAM_VAR_OP_STR_EQ,
-    NGX_STREAM_VAR_OP_STR_NE,
-    NGX_STREAM_VAR_OP_STARTS_WITH,
-    NGX_STREAM_VAR_OP_ENDS_WITH,
-    NGX_STREAM_VAR_OP_CONTAINS,
-    NGX_STREAM_VAR_OP_STR_IN,
-
-    NGX_STREAM_VAR_OP_SET,
+    NGX_STREAM_VAR_OP_SET = 0,
     NGX_STREAM_VAR_OP_LEN,
     NGX_STREAM_VAR_OP_UPPER,
     NGX_STREAM_VAR_OP_LOWER,
@@ -65,20 +51,9 @@ typedef enum {
 #endif
 
 #if (NGX_PCRE)
-    NGX_STREAM_VAR_OP_REGEX_MATCH,
-
     NGX_STREAM_VAR_OP_REGEX_CAPTURE,
     NGX_STREAM_VAR_OP_REGEX_SUB,
 #endif
-
-    NGX_STREAM_VAR_OP_EQ,
-    NGX_STREAM_VAR_OP_NE,
-    NGX_STREAM_VAR_OP_LT,
-    NGX_STREAM_VAR_OP_LE,
-    NGX_STREAM_VAR_OP_GT,
-    NGX_STREAM_VAR_OP_GE,
-    NGX_STREAM_VAR_OP_RANGE,
-    NGX_STREAM_VAR_OP_IN,
 
     NGX_STREAM_VAR_OP_ABS,
     NGX_STREAM_VAR_OP_MAX,
@@ -134,13 +109,9 @@ typedef enum {
     NGX_STREAM_VAR_OP_HMAC_SHA512,
 #endif
 
-    NGX_STREAM_VAR_OP_TIME_RANGE,
-
     NGX_STREAM_VAR_OP_GMT_TIME,
     NGX_STREAM_VAR_OP_LOCAL_TIME,
     NGX_STREAM_VAR_OP_UNIX_TIME,
-
-    NGX_STREAM_VAR_OP_IP_RANGE,
     NGX_STREAM_VAR_OP_CIDR,
 
     NGX_STREAM_VAR_OP_UNKNOWN
@@ -214,11 +185,6 @@ static ngx_int_t ngx_stream_var_utils_auto_atoi(ngx_str_t val,
     ngx_int_t *int_val);
 static ngx_int_t ngx_stream_var_utils_auto_atofp(ngx_str_t val1,
     ngx_str_t val2, ngx_int_t *int_val1, ngx_int_t *int_val2);
-static ngx_int_t ngx_stream_var_utils_auto_atofp3(ngx_str_t val1,
-    ngx_str_t val2, ngx_str_t val3, ngx_int_t *int_val1,
-    ngx_int_t *int_val2, ngx_int_t *int_val3);
-static ngx_int_t ngx_stream_var_utils_parse_uint_range(ngx_str_t str,
-    ngx_int_t *start, ngx_int_t *end);
 static ngx_int_t ngx_stream_var_utils_escape_uri(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule,
     ngx_uint_t type);
@@ -237,31 +203,6 @@ static ngx_int_t ngx_stream_var_utils_hmac(ngx_stream_session_t *s,
     const EVP_MD *evp_md);
 #endif
 
-static ngx_int_t ngx_stream_var_exec_and(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_or(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_not(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-
-static ngx_int_t ngx_stream_var_exec_is_empty(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_is_not_empty(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_is_num(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_str_eq(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_str_ne(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_starts_with(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_ends_with(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_contains(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_str_in(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 
 static ngx_int_t ngx_stream_var_exec_set(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
@@ -302,31 +243,12 @@ static ngx_int_t ngx_stream_var_exec_extract_json(ngx_stream_session_t *s,
 #endif
 
 #if (NGX_PCRE)
-static ngx_int_t ngx_stream_var_exec_regex_match(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-
 static ngx_int_t ngx_stream_var_exec_regex_capture(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 static ngx_int_t ngx_stream_var_exec_regex_sub(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 #endif
 
-static ngx_int_t ngx_stream_var_exec_eq(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_ne(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_lt(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_le(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_gt(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_ge(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_range(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
-static ngx_int_t ngx_stream_var_exec_in(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 
 static ngx_int_t ngx_stream_var_exec_abs(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
@@ -429,8 +351,6 @@ static ngx_int_t ngx_stream_var_exec_hmac_sha512(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 #endif
 
-static ngx_int_t ngx_stream_var_exec_time_range(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 static ngx_int_t ngx_stream_var_exec_gmt_time(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 static ngx_int_t ngx_stream_var_exec_local_time(ngx_stream_session_t *s,
@@ -438,27 +358,11 @@ static ngx_int_t ngx_stream_var_exec_local_time(ngx_stream_session_t *s,
 static ngx_int_t ngx_stream_var_exec_unix_time(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 
-static ngx_int_t ngx_stream_var_exec_ip_range(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 static ngx_int_t ngx_stream_var_exec_cidr(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule);
 
 
 static ngx_stream_var_operator_enum_t  ngx_stream_var_operators[] = {
-    { ngx_string("and"),              NGX_STREAM_VAR_OP_AND,           2, 99 },
-    { ngx_string("or"),               NGX_STREAM_VAR_OP_OR,            2, 99 },
-    { ngx_string("not"),              NGX_STREAM_VAR_OP_NOT,           1, 1  },
-
-    { ngx_string("is_empty"),         NGX_STREAM_VAR_OP_IS_EMPTY,      1, 1  },
-    { ngx_string("is_not_empty"),     NGX_STREAM_VAR_OP_IS_NOT_EMPTY,  1, 1  },
-    { ngx_string("is_num"),           NGX_STREAM_VAR_OP_IS_NUM,        1, 1  },
-    { ngx_string("str_eq"),           NGX_STREAM_VAR_OP_STR_EQ,        2, 2  },
-    { ngx_string("str_ne"),           NGX_STREAM_VAR_OP_STR_NE,        2, 2  },
-    { ngx_string("starts_with"),      NGX_STREAM_VAR_OP_STARTS_WITH,   2, 2  },
-    { ngx_string("ends_with"),        NGX_STREAM_VAR_OP_ENDS_WITH,     2, 2  },
-    { ngx_string("contains"),         NGX_STREAM_VAR_OP_CONTAINS,      2, 2  },
-    { ngx_string("str_in"),           NGX_STREAM_VAR_OP_STR_IN,        3, 99 },
-
     { ngx_string("set"),              NGX_STREAM_VAR_OP_SET,           1, 1  },
     { ngx_string("len"),              NGX_STREAM_VAR_OP_LEN,           1, 1  },
     { ngx_string("upper"),            NGX_STREAM_VAR_OP_UPPER,         1, 1  },
@@ -481,20 +385,9 @@ static ngx_stream_var_operator_enum_t  ngx_stream_var_operators[] = {
 #endif
 
 #if (NGX_PCRE)
-    { ngx_string("regex_match"),      NGX_STREAM_VAR_OP_REGEX_MATCH,   2, 2  },
-
     { ngx_string("regex_capture"),    NGX_STREAM_VAR_OP_REGEX_CAPTURE, 3, 3  },
     { ngx_string("regex_sub"),        NGX_STREAM_VAR_OP_REGEX_SUB,     3, 3  },
 #endif
-
-    { ngx_string("eq"),               NGX_STREAM_VAR_OP_EQ,            2, 2  },
-    { ngx_string("ne"),               NGX_STREAM_VAR_OP_NE,            2, 2  },
-    { ngx_string("lt"),               NGX_STREAM_VAR_OP_LT,            2, 2  },
-    { ngx_string("le"),               NGX_STREAM_VAR_OP_LE,            2, 2  },
-    { ngx_string("gt"),               NGX_STREAM_VAR_OP_GT,            2, 2  },
-    { ngx_string("ge"),               NGX_STREAM_VAR_OP_GE,            2, 2  },
-    { ngx_string("range"),            NGX_STREAM_VAR_OP_RANGE,         2, 3  },
-    { ngx_string("in"),               NGX_STREAM_VAR_OP_IN,            3, 99 },
 
     { ngx_string("abs"),              NGX_STREAM_VAR_OP_ABS,           1, 1  },
     { ngx_string("max"),              NGX_STREAM_VAR_OP_MAX,           2, 2  },
@@ -552,13 +445,9 @@ static ngx_stream_var_operator_enum_t  ngx_stream_var_operators[] = {
     { ngx_string("hmac_sha512"),      NGX_STREAM_VAR_OP_HMAC_SHA512,   2, 2  },
 #endif
 
-    { ngx_string("time_range"),       NGX_STREAM_VAR_OP_TIME_RANGE,    1, 8  },
-
     { ngx_string("gmt_time"),         NGX_STREAM_VAR_OP_GMT_TIME,      1, 2  },
     { ngx_string("local_time"),       NGX_STREAM_VAR_OP_LOCAL_TIME,    1, 2  },
     { ngx_string("unix_time"),        NGX_STREAM_VAR_OP_UNIX_TIME,     0, 3  },
-
-    { ngx_string("ip_range"),         NGX_STREAM_VAR_OP_IP_RANGE,      2, 99 },
     { ngx_string("cidr"),             NGX_STREAM_VAR_OP_CIDR,          2, 3  },
 
     { ngx_null_string,                NGX_STREAM_VAR_OP_UNKNOWN,       0, 0  }
@@ -883,17 +772,9 @@ ngx_stream_var_create_variable(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 #if (NGX_PCRE)
 
-    if (op == NGX_STREAM_VAR_OP_REGEX_MATCH
-        || op == NGX_STREAM_VAR_OP_REGEX_CAPTURE
+    if (op == NGX_STREAM_VAR_OP_REGEX_CAPTURE
         || op == NGX_STREAM_VAR_OP_REGEX_SUB)
     {
-        if (args < 2) {
-            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                               "var: regex operators "
-                               "requires at least 2 arguments");
-            return NGX_CONF_ERROR;
-        }
-
         args--;
 
         rule->args = ngx_array_create(cf->pool, ngx_max(args, 1),
@@ -952,28 +833,19 @@ ngx_stream_var_create_variable(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         cur++;
 
-        if (op != NGX_STREAM_VAR_OP_REGEX_MATCH) {
-            if (args != 2) {
-                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                   "var: regex_capture or regex_sub "
-                                   "operators requires 3 arguments");
-                return NGX_CONF_ERROR;
-            }
+        cv = ngx_array_push(rule->args);
+        if (cv == NULL) {
+            return NGX_CONF_ERROR;
+        }
 
-            cv = ngx_array_push(rule->args);
-            if (cv == NULL) {
-                return NGX_CONF_ERROR;
-            }
+        ngx_memzero(&ccv, sizeof(ngx_stream_compile_complex_value_t));
 
-            ngx_memzero(&ccv, sizeof(ngx_stream_compile_complex_value_t));
+        ccv.cf = cf;
+        ccv.value = &value[cur];
+        ccv.complex_value = cv;
 
-            ccv.cf = cf;
-            ccv.value = &value[cur];
-            ccv.complex_value = cv;
-
-            if (ngx_stream_compile_complex_value(&ccv) != NGX_OK) {
-                return NGX_CONF_ERROR;
-            }
+        if (ngx_stream_compile_complex_value(&ccv) != NGX_OK) {
+            return NGX_CONF_ERROR;
         }
 
     } else {
@@ -1151,42 +1023,6 @@ ngx_stream_var_evaluate_rule(ngx_stream_session_t *s,
 {
     switch (rule->operator) {
 
-    case NGX_STREAM_VAR_OP_AND:
-        return ngx_stream_var_exec_and(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_OR:
-        return ngx_stream_var_exec_or(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_NOT:
-        return ngx_stream_var_exec_not(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_IS_EMPTY:
-        return ngx_stream_var_exec_is_empty(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_IS_NOT_EMPTY:
-        return ngx_stream_var_exec_is_not_empty(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_IS_NUM:
-        return ngx_stream_var_exec_is_num(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_STR_EQ:
-        return ngx_stream_var_exec_str_eq(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_STR_NE:
-        return ngx_stream_var_exec_str_ne(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_STARTS_WITH:
-        return ngx_stream_var_exec_starts_with(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_ENDS_WITH:
-        return ngx_stream_var_exec_ends_with(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_CONTAINS:
-        return ngx_stream_var_exec_contains(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_STR_IN:
-        return ngx_stream_var_exec_str_in(s, v, rule);
-
     case NGX_STREAM_VAR_OP_SET:
         return ngx_stream_var_exec_set(s, v, rule);
 
@@ -1241,39 +1077,12 @@ ngx_stream_var_evaluate_rule(ngx_stream_session_t *s,
 #endif
 
 #if (NGX_PCRE)
-    case NGX_STREAM_VAR_OP_REGEX_MATCH:
-        return ngx_stream_var_exec_regex_match(s, v, rule);
-
     case NGX_STREAM_VAR_OP_REGEX_CAPTURE:
         return ngx_stream_var_exec_regex_capture(s, v, rule);
 
     case NGX_STREAM_VAR_OP_REGEX_SUB:
         return ngx_stream_var_exec_regex_sub(s, v, rule);
 #endif
-
-    case NGX_STREAM_VAR_OP_EQ:
-        return ngx_stream_var_exec_eq(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_NE:
-        return ngx_stream_var_exec_ne(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_LT:
-        return ngx_stream_var_exec_lt(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_LE:
-        return ngx_stream_var_exec_le(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_GT:
-        return ngx_stream_var_exec_gt(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_GE:
-        return ngx_stream_var_exec_ge(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_RANGE:
-        return ngx_stream_var_exec_range(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_IN:
-        return ngx_stream_var_exec_in(s, v, rule);
 
     case NGX_STREAM_VAR_OP_ABS:
         return ngx_stream_var_exec_abs(s, v, rule);
@@ -1418,9 +1227,6 @@ ngx_stream_var_evaluate_rule(ngx_stream_session_t *s,
         return ngx_stream_var_exec_hmac_sha512(s, v, rule);
 #endif
 
-    case NGX_STREAM_VAR_OP_TIME_RANGE:
-        return ngx_stream_var_exec_time_range(s, v, rule);
-
     case NGX_STREAM_VAR_OP_GMT_TIME:
         return ngx_stream_var_exec_gmt_time(s, v, rule);
 
@@ -1429,9 +1235,6 @@ ngx_stream_var_evaluate_rule(ngx_stream_session_t *s,
 
     case NGX_STREAM_VAR_OP_UNIX_TIME:
         return ngx_stream_var_exec_unix_time(s, v, rule);
-
-    case NGX_STREAM_VAR_OP_IP_RANGE:
-        return ngx_stream_var_exec_ip_range(s, v, rule);
 
     case NGX_STREAM_VAR_OP_CIDR:
         return ngx_stream_var_exec_cidr(s, v, rule);
@@ -1691,175 +1494,6 @@ ngx_stream_var_utils_auto_atofp(ngx_str_t val1, ngx_str_t val2,
 
     if (is_negative2 == 1) {
         *int_val2 = -*int_val2;
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_utils_auto_atofp3(ngx_str_t val1, ngx_str_t val2, ngx_str_t val3,
-    ngx_int_t *int_val1, ngx_int_t *int_val2, ngx_int_t *int_val3)
-{
-    ngx_uint_t  decimal_places1, decimal_places2, decimal_places3;
-    ngx_uint_t  max_decimal_places;
-    ngx_uint_t  is_negative1, is_negative2, is_negative3;
-    ngx_uint_t  i;
-
-    decimal_places1 = 0;
-    decimal_places2 = 0;
-    decimal_places3 = 0;
-    is_negative1 = 0;
-    is_negative2 = 0;
-    is_negative3 = 0;
-
-    if (val1.len == 0 || val2.len == 0 || val3.len == 0) {
-        return NGX_ERROR;
-    }
-
-    if (val1.data[0] == '-') {
-
-        if (val1.len == 1) {
-            return NGX_ERROR;
-        }
-
-        is_negative1 = 1;
-        val1.data++;
-        val1.len--;
-    }
-
-    if (val2.data[0] == '-') {
-
-        if (val2.len == 1) {
-            return NGX_ERROR;
-        }
-
-        is_negative2 = 1;
-        val2.data++;
-        val2.len--;
-    }
-
-    if (val3.data[0] == '-') {
-
-        if (val3.len == 1) {
-            return NGX_ERROR;
-        }
-
-        is_negative3 = 1;
-        val3.data++;
-        val3.len--;
-    }
-
-    for (i = 0; i < val1.len; i++) {
-
-        if (val1.data[i] == '.') {
-            decimal_places1 = val1.len - i - 1;
-            break;
-        }
-    }
-
-    for (i = 0; i < val2.len; i++) {
-
-        if (val2.data[i] == '.') {
-            decimal_places2 = val2.len - i - 1;
-            break;
-        }
-    }
-
-    for (i = 0; i < val3.len; i++) {
-
-        if (val3.data[i] == '.') {
-            decimal_places3 = val3.len - i - 1;
-            break;
-        }
-    }
-
-
-    max_decimal_places = ngx_max(decimal_places1, decimal_places2);
-    max_decimal_places = ngx_max(max_decimal_places, decimal_places3);
-
-    if (max_decimal_places == 0) {
-        *int_val1 = ngx_atoi(val1.data, val1.len);
-        *int_val2 = ngx_atoi(val2.data, val2.len);
-        *int_val3 = ngx_atoi(val3.data, val3.len);
-
-    } else {
-        *int_val1 = ngx_atofp(val1.data, val1.len, max_decimal_places);
-        *int_val2 = ngx_atofp(val2.data, val2.len, max_decimal_places);
-        *int_val3 = ngx_atofp(val3.data, val3.len, max_decimal_places);
-    }
-
-    if (*int_val1 == NGX_ERROR || *int_val2 == NGX_ERROR
-        || *int_val3 == NGX_ERROR)
-    {
-        return NGX_ERROR;
-    }
-
-    if (is_negative1 == 1) {
-        *int_val1 = -*int_val1;
-    }
-
-    if (is_negative2 == 1) {
-        *int_val2 = -*int_val2;
-    }
-
-    if (is_negative3 == 1) {
-        *int_val3 = -*int_val3;
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_utils_parse_uint_range(ngx_str_t str,
-    ngx_int_t *start, ngx_int_t *end)
-{
-    ngx_uint_t   i;
-    ngx_str_t    str_start, str_end;
-
-    if (str.len == 0) {
-        return NGX_ERROR;
-    }
-
-    for (i = 1; i < str.len; i++) {
-
-        if (str.data[i] == '-') {
-            break;
-        }
-    }
-
-    if (i == str.len) {
-        *start = ngx_atoi(str.data, str.len);
-        if (*start == NGX_ERROR) {
-            return NGX_ERROR;
-        }
-
-        *end = *start;
-        return NGX_OK;
-    }
-
-    str_start.data = str.data;
-    str_start.len = i;
-    str_end.data = str.data + i + 1;
-    str_end.len = str.len - i - 1;
-
-    if (str_end.len == 0) {
-        return NGX_ERROR;
-    }
-
-    *start = ngx_atoi(str_start.data, str_start.len);
-    if (*start == NGX_ERROR) {
-        return NGX_ERROR;
-    }
-
-    *end = ngx_atoi(str_end.data, str_end.len);
-    if (*end == NGX_ERROR) {
-        return NGX_ERROR;
-    }
-
-    if (*start > *end) {
-        return NGX_ERROR;
     }
 
     return NGX_OK;
@@ -2282,396 +1916,6 @@ ngx_stream_var_utils_hmac(ngx_stream_session_t *s,
 }
 
 #endif
-
-
-static ngx_int_t
-ngx_stream_var_exec_and(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_uint_t                   i;
-    ngx_str_t                    val;
-
-    args = rule->args->elts;
-
-    for (i = 0; i < rule->args->nelts; i++) {
-
-        if (ngx_stream_complex_value(s, &args[i], &val) != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-        if (val.len == 0 || (val.len == 1 && val.data[0] == '0')) {
-            v->len = 1;
-            v->data = (u_char *) "0";
-            return NGX_OK;
-        }
-    }
-
-    v->len = 1;
-    v->data = (u_char *) "1";
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_or(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_uint_t                   i;
-    ngx_str_t                    val;
-
-    args = rule->args->elts;
-
-    for (i = 0; i < rule->args->nelts; i++) {
-
-        if (ngx_stream_complex_value(s, &args[i], &val) != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-        if (val.len > 0 && (val.len != 1 || val.data[0] != '0')) {
-            v->len = 1;
-            v->data = (u_char *) "1";
-            return NGX_OK;
-        }
-    }
-
-    v->len = 1;
-    v->data = (u_char *) "0";
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_not(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    if (val.len == 0 || (val.len == 1 && val.data[0] == '0')) {
-        v->data = (u_char *) "1";
-
-    } else {
-        v->data = (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_is_empty(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    if (val.len == 0) {
-        v->data = (u_char *) "1";
-
-    } else {
-        v->data = (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_is_not_empty(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    if (val.len == 0) {
-        v->data = (u_char *) "0";
-
-    } else {
-        v->data = (u_char *) "1";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_is_num(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    if (ngx_stream_var_utils_check_str_is_num(val) != NGX_OK) {
-        v->data = (u_char *) "0";
-
-    } else {
-        v->data = (u_char *) "1";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_str_eq(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val1, val2;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val1) != NGX_OK
-        || ngx_stream_complex_value(s, &args[1], &val2) != NGX_OK)
-    {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-
-    if (val1.len != val2.len) {
-        v->data = (u_char *) "0";
-        return NGX_OK;
-    }
-
-    if (val1.len == 0 && val2.len == 0) {
-        v->data = (u_char *) "1";
-        return NGX_OK;
-    }
-
-    if (rule->ignore_case) {
-        v->data = (ngx_strncasecmp(val1.data, val2.data, val1.len) == 0)
-                  ? (u_char *) "1" : (u_char *) "0";
-
-    } else {
-        v->data = (ngx_strncmp(val1.data, val2.data, val1.len) == 0)
-                  ? (u_char *) "1" : (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_str_ne(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    if (ngx_stream_var_exec_str_eq(s, v, rule) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    v->data = (v->data[0] == '0') ? (u_char *) "1" : (u_char *) "0";
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_starts_with(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val, prefix;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    if (ngx_stream_complex_value(s, &args[1], &prefix) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-
-    if (prefix.len == 0) {
-        v->data = (u_char *) "1";
-        return NGX_OK;
-    }
-
-    if (prefix.len > val.len) {
-        v->data = (u_char *) "0";
-        return NGX_OK;
-    }
-
-    if (rule->ignore_case) {
-        v->data = (ngx_strncasecmp(val.data, prefix.data, prefix.len) == 0)
-                  ? (u_char *) "1" : (u_char *) "0";
-
-    } else {
-        v->data = (ngx_strncmp(val.data, prefix.data, prefix.len) == 0)
-                  ? (u_char *) "1" : (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_ends_with(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val, suffix;
-    u_char                      *val_end;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    if (ngx_stream_complex_value(s, &args[1], &suffix) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-
-    if (suffix.len == 0) {
-        v->data = (u_char *) "1";
-        return NGX_OK;
-    }
-
-    if (suffix.len > val.len) {
-        v->data = (u_char *) "0";
-        return NGX_OK;
-    }
-
-    val_end = val.data + val.len - suffix.len;
-
-    if (rule->ignore_case) {
-        v->data = (ngx_strncasecmp(val_end, suffix.data, suffix.len) == 0)
-                  ? (u_char *) "1" : (u_char *) "0";
-
-    } else {
-        v->data = (ngx_strncmp(val_end, suffix.data, suffix.len) == 0)
-                  ? (u_char *) "1" : (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_contains(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val, sub;
-    u_char                      *p;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    if (ngx_stream_complex_value(s, &args[1], &sub) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-
-    if (sub.len == 0) {
-        v->data = (u_char *) "1";
-        return NGX_OK;
-    }
-
-    if (sub.len > val.len) {
-        v->data = (u_char *) "0";
-        return NGX_OK;
-    }
-
-    if (rule->ignore_case) {
-        p = ngx_strlcasestrn(val.data, val.data + val.len,
-                sub.data, sub.len - 1);
-
-    } else {
-        p = ngx_stream_var_utils_strlstrn(val.data, val.data + val.len,
-                sub.data, sub.len - 1);
-    }
-
-    v->data = (p != NULL) ? (u_char *) "1" : (u_char *) "0";
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_str_in(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val1, val2;
-    ngx_uint_t                   i;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val1) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-
-    for (i = 1; i < rule->args->nelts; i++) {
-
-        if (ngx_stream_complex_value(s, &args[i], &val2) != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-        if (val1.len != val2.len) {
-            continue;
-        }
-
-        if (rule->ignore_case) {
-
-            if (ngx_strncasecmp(val1.data, val2.data, val1.len) == 0) {
-                v->data = (u_char *) "1";
-                return NGX_OK;
-            }
-
-        } else if (ngx_strncmp(val1.data, val2.data, val1.len) == 0) {
-            v->data = (u_char *) "1";
-            return NGX_OK;
-        }
-    }
-
-    v->data = (u_char *) "0";
-
-    return NGX_OK;
-}
 
 
 static ngx_int_t
@@ -3657,40 +2901,6 @@ failed:
 #if (NGX_PCRE)
 
 static ngx_int_t
-ngx_stream_var_exec_regex_match(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t    *args;
-    ngx_str_t                      val;
-    ngx_int_t                      rc;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-
-    rc = ngx_stream_regex_exec(s, rule->regex, &val);
-
-    if (rc == NGX_OK) {
-        v->data = (u_char *) "1";
-        return NGX_OK;
-    } 
-    
-    if (rc == NGX_DECLINED) {
-        v->data = (u_char *) "0";
-        return NGX_OK;
-    }
-
-    ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                      "var: regex match failed");
-    return NGX_ERROR;
-}
-
-
-static ngx_int_t
 ngx_stream_var_exec_regex_capture(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
 {
@@ -3792,331 +3002,6 @@ ngx_stream_var_exec_regex_sub(ngx_stream_session_t *s,
 }
 
 #endif
-
-
-static ngx_int_t
-ngx_stream_var_exec_eq(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val1, val2;
-    ngx_int_t                    int_val1, int_val2;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val1) != NGX_OK
-        || ngx_stream_complex_value(s, &args[1], &val2) != NGX_OK)
-    {
-        return NGX_ERROR;
-    }
-
-    if (ngx_stream_var_utils_auto_atofp(val1, val2, &int_val1, &int_val2)
-        != NGX_OK)
-    {
-        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                      "var: \"eq\" failed to convert "
-                      "values to fixed point");
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    if (int_val1 == int_val2) {
-        v->data = (u_char *) "1";
-
-    } else {
-        v->data = (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_ne(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val1, val2;
-    ngx_int_t                    int_val1, int_val2;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val1) != NGX_OK
-        || ngx_stream_complex_value(s, &args[1], &val2) != NGX_OK)
-    {
-        return NGX_ERROR;
-    }
-
-    if (ngx_stream_var_utils_auto_atofp(val1, val2, &int_val1, &int_val2)
-        != NGX_OK)
-    {
-        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                      "var: \"ne\" failed to convert "
-                      "values to fixed point");
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    if (int_val1 != int_val2) {
-        v->data = (u_char *) "1";
-
-    } else {
-        v->data = (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_lt(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val1, val2;
-    ngx_int_t                    int_val1, int_val2;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val1) != NGX_OK
-        || ngx_stream_complex_value(s, &args[1], &val2) != NGX_OK)
-    {
-        return NGX_ERROR;
-    }
-
-    if (ngx_stream_var_utils_auto_atofp(val1, val2, &int_val1, &int_val2)
-        != NGX_OK)
-    {
-        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                      "var: \"lt\" failed to convert "
-                      "values to fixed point");
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    if (int_val1 < int_val2) {
-        v->data = (u_char *) "1";
-
-    } else {
-        v->data = (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_le(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val1, val2;
-    ngx_int_t                    int_val1, int_val2;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val1) != NGX_OK
-        || ngx_stream_complex_value(s, &args[1], &val2) != NGX_OK)
-    {
-        return NGX_ERROR;
-    }
-
-    if (ngx_stream_var_utils_auto_atofp(val1, val2, &int_val1, &int_val2)
-        != NGX_OK)
-    {
-        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                      "var: \"le\" failed to convert "
-                      "values to fixed point");
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    if (int_val1 <= int_val2) {
-        v->data = (u_char *) "1";
-
-    } else {
-        v->data = (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_gt(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val1, val2;
-    ngx_int_t                    int_val1, int_val2;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val1) != NGX_OK
-        || ngx_stream_complex_value(s, &args[1], &val2) != NGX_OK)
-    {
-        return NGX_ERROR;
-    }
-
-    if (ngx_stream_var_utils_auto_atofp(val1, val2, &int_val1, &int_val2)
-        != NGX_OK)
-    {
-        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                      "var: \"gt\" failed to convert "
-                      "values to fixed point");
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    if (int_val1 > int_val2) {
-        v->data = (u_char *) "1";
-
-    } else {
-        v->data = (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_ge(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val1, val2;
-    ngx_int_t                    int_val1, int_val2;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val1) != NGX_OK
-        || ngx_stream_complex_value(s, &args[1], &val2) != NGX_OK)
-    {
-        return NGX_ERROR;
-    }
-
-    if (ngx_stream_var_utils_auto_atofp(val1, val2, &int_val1, &int_val2)
-        != NGX_OK)
-    {
-        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                      "var: \"gt\" failed to convert "
-                      "values to fixed point");
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    if (int_val1 >= int_val2) {
-        v->data = (u_char *) "1";
-
-    } else {
-        v->data = (u_char *) "0";
-    }
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_range(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val, val_start, val_end;
-    ngx_int_t                    fp_val, fp_start, fp_end;
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    if (rule->args->nelts == 2) {
-        /* 2-arg mode: range(num, upper) checks [0, upper] */
-        if (ngx_stream_complex_value(s, &args[1], &val_end) != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-        if (ngx_stream_var_utils_auto_atofp(val, val_end, &fp_val, &fp_end)
-            != NGX_OK)
-        {
-            ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                          "var: \"range\" failed to convert "
-                          "values (2-arg mode: num, upper) to fixed point");
-            return NGX_ERROR;
-        }
-
-        v->len = 1;
-        v->data = (fp_val >= 0 && fp_val <= fp_end)
-                  ? (u_char *) "1" : (u_char *) "0";
-        return NGX_OK;
-    }
-
-    /* 3-arg mode: range(num, start, end) checks [start, end] */
-    if (ngx_stream_complex_value(s, &args[1], &val_start) != NGX_OK
-        || ngx_stream_complex_value(s, &args[2], &val_end) != NGX_OK)
-    {
-        return NGX_ERROR;
-    }
-
-    if (ngx_stream_var_utils_auto_atofp3(val, val_start, val_end,
-                                        &fp_val, &fp_start, &fp_end) != NGX_OK)
-    {
-        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                        "var: \"range\" failed to convert "
-                        "values (3-arg mode: num, start, end) to fixed point");
-        return NGX_ERROR;
-    }
-
-    v->len = 1;
-    v->data = (fp_val >= fp_start && fp_val <= fp_end)
-              ? (u_char *) "1" : (u_char *) "0";
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_stream_var_exec_in(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    val, val_cmp;
-    ngx_int_t                    fp_val, fp_cmp;
-    ngx_uint_t                   i, nelts;
-
-    args = rule->args->elts;
-    nelts = rule->args->nelts;
-
-    if (ngx_stream_complex_value(s, &args[0], &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    for (i = 1; i < nelts; i++) {
-
-        if (ngx_stream_complex_value(s, &args[i], &val_cmp) != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-        if (ngx_stream_var_utils_auto_atofp(val, val_cmp,
-                                          &fp_val, &fp_cmp) != NGX_OK)
-        {
-            ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                          "var: \"in\" failed to convert "
-                          "value at position %ui to fixed point", i);
-            continue;
-        }
-
-        if (fp_val == fp_cmp) {
-            v->len = 1;
-            v->data = (u_char *) "1";
-            return NGX_OK;
-        }
-    }
-
-    v->len = 1;
-    v->data = (u_char *) "0";
-    return NGX_OK;
-}
 
 
 static ngx_int_t
@@ -6078,341 +4963,6 @@ ngx_stream_var_exec_hmac_sha512(ngx_stream_session_t *s,
 
 
 static ngx_int_t
-ngx_stream_var_exec_time_range(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    str;
-    ngx_int_t                    year_start, year_end;
-    ngx_int_t                    month_start, month_end;
-    ngx_int_t                    day_start, day_end;
-    ngx_int_t                    wday_start, wday_end;
-    ngx_int_t                    hour_start, hour_end;
-    ngx_int_t                    min_start, min_end;
-    ngx_int_t                    sec_start, sec_end;
-    ngx_int_t                    tz_offset;
-    ngx_uint_t                   i, j;
-    time_t                       raw_time;
-    struct tm                    tm;
-
-    args = rule->args->elts;
-
-    year_start = -1;
-    year_end = -1;
-    month_start = -1;
-    month_end = -1;
-    day_start = -1;
-    day_end = -1;
-    wday_start = -1;
-    wday_end = -1;
-    hour_start = -1;
-    hour_end = -1;
-    min_start = -1;
-    min_end = -1;
-    sec_start = -1;
-    sec_end = -1;
-    tz_offset = 0;
-
-    for (i = 0; i < rule->args->nelts; i++) {
-
-        if (ngx_stream_complex_value(s, &args[i], &str) != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-        if (ngx_strncmp(str.data, "year=", 5) == 0) {
-
-            str.len = str.len - 5;
-            str.data = str.data + 5;
-
-            if (ngx_stream_var_utils_parse_uint_range(str, &year_start, &year_end)
-                != NGX_OK)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid year range value");
-                return NGX_ERROR;
-            }
-
-            if (year_start < 1970 || year_end < year_start) {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid year range value");
-                return NGX_ERROR;
-            }
-
-            year_start = year_start - 1900;
-            year_end = year_end - 1900;
-
-            continue;
-        } 
-        
-        if (ngx_strncmp(str.data, "month=", 6) == 0) {
-
-            str.len = str.len - 6;
-            str.data = str.data + 6;
-
-            if (ngx_stream_var_utils_parse_uint_range(str, &month_start,
-                                                      &month_end)
-                != NGX_OK)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid month range value");
-                return NGX_ERROR;
-            }
-
-            if (month_start < 1 || month_start > 12
-                || month_end < month_start || month_end > 12)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid month range value");
-                return NGX_ERROR;
-            }
-
-            month_start--;
-            month_end--;
-
-            continue;
-        }
-
-        if (ngx_strncmp(str.data, "day=", 4) == 0) {
-
-            str.len = str.len - 4;
-            str.data = str.data + 4;
-
-            if (ngx_stream_var_utils_parse_uint_range(str, &day_start, &day_end)
-                != NGX_OK)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid day range value");
-                return NGX_ERROR;
-            }
-
-            if (day_start < 1 || day_start > 31
-                || day_end < day_start || day_end > 31)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid day range value");
-                return NGX_ERROR;
-            }
-
-            continue;
-        }
-        
-        if (ngx_strncmp(str.data, "wday=", 5) == 0) {
-
-            str.len = str.len - 5;
-            str.data = str.data + 5;
-
-            if (ngx_stream_var_utils_parse_uint_range(str, &wday_start, &wday_end)
-                != NGX_OK)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid wday range value");
-                return NGX_ERROR;
-            }
-
-            if (wday_start < 0 || wday_start > 6
-                || wday_end < wday_start || wday_end > 6)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid wday range value");
-                return NGX_ERROR;
-            }
-
-            continue;
-        }
-        
-        if (ngx_strncmp(str.data, "hour=", 5) == 0) {
-
-            str.len = str.len - 5;
-            str.data = str.data + 5;
-
-            if (ngx_stream_var_utils_parse_uint_range(str, &hour_start, &hour_end)
-                != NGX_OK)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid hour range value");
-                return NGX_ERROR;
-            }
-
-            if (hour_start < 0 || hour_start > 23
-                || hour_end < hour_start || hour_end > 23)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid hour range value");
-                return NGX_ERROR;
-            }
-
-            continue;
-        }
-
-        if (ngx_strncmp(str.data, "min=", 4) == 0) {
-
-            str.len = str.len - 4;
-            str.data = str.data + 4;
-
-            if (ngx_stream_var_utils_parse_uint_range(str, &min_start, &min_end)
-                != NGX_OK)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid minute range value");
-                return NGX_ERROR;
-            }
-
-            if (min_start < 0 || min_start > 59
-                || min_end < min_start || min_end > 59)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid minute range value");
-                return NGX_ERROR;
-            }
-
-            continue;
-        }
-
-        if (ngx_strncmp(str.data, "sec=", 4) == 0) {
-
-            str.len = str.len - 4;
-            str.data = str.data + 4;
-
-            if (ngx_stream_var_utils_parse_uint_range(str, &sec_start, &sec_end)
-                != NGX_OK)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid second range value");
-                return NGX_ERROR;
-            }
-
-            if (sec_start < 0 || sec_start > 59
-                || sec_end < sec_start || sec_end > 59)
-            {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid second range value");
-                return NGX_ERROR;
-            }
-
-            continue;
-        }
-
-        if (ngx_strncmp(str.data, "timezone=", 9) == 0) {
-
-            if (rule->args->nelts == 1) {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: at least one time range "
-                              "args must be present");
-                return NGX_ERROR;
-            }
-
-            str.len = str.len - 9;
-            str.data = str.data + 9;
-
-            if (ngx_strncasecmp(str.data, (u_char *) "gmt", 3) != 0) {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid timezone format");
-                return NGX_ERROR;
-            }
-
-            str.len = str.len - 3;
-            str.data = str.data + 3;
-
-            if (str.len == 0) {
-                tz_offset = 0;
-                continue;
-            }
-
-            if (str.len != 5 || (str.data[0] != '+' && str.data[0] != '-')) {
-                ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                              "var: invalid timezone format");
-                return NGX_ERROR;
-            }
-
-            for (j = 1; j < str.len; j++) {
-
-                if (str.data[j] < '0' || str.data[j] > '9') {
-                    ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                        "var: invalid timezone offset value");
-                    return NGX_ERROR;
-                }
-            }
-
-            tz_offset = (str.data[1] - '0') * 10 * 60 * 60;
-            tz_offset += (str.data[2] - '0') * 60 * 60;
-            tz_offset += (str.data[3] - '0') * 10 * 60;
-            tz_offset += (str.data[4] - '0') * 60;
-
-            if (str.data[0] == '-') {
-                tz_offset = -tz_offset;
-            }
-
-            continue;
-        }
-
-        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                      "var: invalid parameter \"%V\"", &str);
-
-        return NGX_ERROR;
-    }
-
-    /* get current time */
-    raw_time = ngx_time() + (time_t) tz_offset;
-
-    ngx_libc_gmtime(raw_time, &tm);
-
-    /* check year */
-    if (year_start != -1
-        && (tm.tm_year < year_start || tm.tm_year > year_end))
-    {
-        goto range_miss;
-    }
-
-    /* check month */
-    if (month_start != -1
-        && (tm.tm_mon < month_start || tm.tm_mon > month_end))
-    {
-        goto range_miss;
-    }
-
-    if (day_start != -1 && (tm.tm_mday < day_start || tm.tm_mday > day_end)) {
-        goto range_miss;
-    }
-
-    /* check weekday */
-    if (wday_start != -1
-        && (tm.tm_wday < wday_start || tm.tm_wday > wday_end))
-    {
-        goto range_miss;
-    }
-
-    /* check hour */
-    if (hour_start != -1
-        && (tm.tm_hour < hour_start || tm.tm_hour > hour_end))
-    {
-        goto range_miss;
-    }
-
-    /* check minute */
-    if (min_start != -1 && (tm.tm_min < min_start || tm.tm_min > min_end)) {
-        goto range_miss;
-    }
-
-    /* check second */
-    if (sec_start != -1 && (tm.tm_sec < sec_start || tm.tm_sec > sec_end)) {
-        goto range_miss;
-    }
-
-    v->len = 1;
-    v->data = (u_char *) "1";
-
-    return NGX_OK;
-
-range_miss:
-
-    v->len = 1;
-    v->data = (u_char *) "0";
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
 ngx_stream_var_exec_gmt_time(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
 {
@@ -6522,7 +5072,6 @@ ngx_stream_var_exec_local_time(ngx_stream_session_t *s,
     ngx_stream_complex_value_t  *args;
     ngx_str_t                    str;
     time_t                       ts;
-    u_char                      *p;
     struct tm                    tm;
     char                         buf[2048];
     char                         fmt[2048];
@@ -6719,152 +5268,6 @@ set_unix_time:
 
 
 static ngx_int_t
-ngx_stream_var_exec_ip_range(ngx_stream_session_t *s,
-    ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
-{
-    ngx_stream_complex_value_t  *args;
-    ngx_str_t                    str, range;
-    ngx_uint_t                   i;
-    ngx_cidr_t                   cidr;
-    in_addr_t                    ipv4_addr, start_addr, end_addr;
-    u_char                      *p;
-
-#if (NGX_HAVE_INET6)
-    u_char                     ipv6_buf[16];
-    struct in6_addr            ipv6_addr;
-    ngx_uint_t                 n;
-#endif
-
-    args = rule->args->elts;
-
-    if (ngx_stream_complex_value(s, &args[0], &str) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    ipv4_addr = ngx_inet_addr(str.data, str.len);
-
-#if (NGX_HAVE_INET6)
-
-    if (ipv4_addr == INADDR_NONE) {
-
-        if (ngx_inet6_addr(str.data, str.len, ipv6_buf) != NGX_OK) {
-            ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                          "var: invalid ip address: \"%V\"", &str);
-            return NGX_ERROR;
-        }
-
-        ngx_memcpy(&ipv6_addr, ipv6_buf, sizeof(struct in6_addr));
-
-        if (IN6_IS_ADDR_V4MAPPED(&ipv6_addr)) {
-            ipv4_addr = ipv6_addr.s6_addr[12] << 24;
-            ipv4_addr += ipv6_addr.s6_addr[13] << 16;
-            ipv4_addr += ipv6_addr.s6_addr[14] << 8;
-            ipv4_addr += ipv6_addr.s6_addr[15];
-        }
-    }
-
-#else
-
-    if (ipv4_addr == INADDR_NONE) {
-        ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                      "var: invalid ip address: \"%V\"", &str);
-        return NGX_ERROR;
-    }
-
-#endif
-
-    for (i = 1; i < rule->args->nelts; i++) {
-
-        if (ngx_stream_complex_value(s, &args[i], &range) != NGX_OK) {
-            return NGX_ERROR;
-        }
-
-        if (ngx_ptocidr(&range, &cidr) == NGX_OK) {
-
-            if (cidr.family == AF_INET) {
-
-                if (ipv4_addr != INADDR_NONE
-                    && (ipv4_addr & cidr.u.in.mask) == cidr.u.in.addr)
-                {
-                    v->len = 1;
-                    v->data = (u_char *) "1";
-                    return NGX_OK;
-                }
-
-                goto next;
-            }
-
-#if (NGX_HAVE_INET6)
-
-            if (cidr.family == AF_INET6) {
-
-                for (n = 0; n < 16; n++) {
-
-                    if ((ipv6_addr.s6_addr[n] & cidr.u.in6.mask.s6_addr[n])
-                        != cidr.u.in6.addr.s6_addr[n])
-                    {
-                        goto next;
-                    }
-                }
-
-                v->len = 1;
-                v->data = (u_char *) "1";
-                return NGX_OK;
-            }
-#endif
-
-            goto next;
-        }
-
-        if (ipv4_addr == INADDR_NONE) {
-            goto invalid_ip_range;
-        }
-
-        p = ngx_strlchr(range.data, range.data + range.len, '-');
-        if (p == NULL) {
-            goto invalid_ip_range;
-        }
-
-        start_addr = ngx_inet_addr(range.data, p - range.data);
-
-        p++;
-
-        end_addr = ngx_inet_addr(p, range.data + range.len - p);
-
-        if (start_addr == INADDR_NONE || end_addr == INADDR_NONE) {
-            goto invalid_ip_range;
-        }
-
-        start_addr = ntohl(start_addr);
-        end_addr = ntohl(end_addr);
-        ipv4_addr = ntohl(ipv4_addr);
-
-        if (ipv4_addr >= start_addr && ipv4_addr <= end_addr) {
-            v->len = 1;
-            v->data = (u_char *) "1";
-            return NGX_OK;
-        }
-
-next:
-
-        continue;
-    }
-
-    v->len = 1;
-    v->data = (u_char *) "0";
-
-    return NGX_OK;
-
-invalid_ip_range:
-
-    ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                  "var: invalid ip or cidr range: \"%V\"",
-                  &range);
-    return NGX_ERROR;
-}
-
-
-static ngx_int_t
 ngx_stream_var_exec_cidr(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
 {
@@ -6873,7 +5276,6 @@ ngx_stream_var_exec_cidr(ngx_stream_session_t *s,
     ngx_int_t                    ipv4_bits, ipv6_bits;
     in_addr_t                    ipv4_addr, network;
     u_char                      *p;
-    size_t                       len;
 
 #if (NGX_HAVE_INET6)
     u_char                     ipv6_buf[16];
