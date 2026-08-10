@@ -24,8 +24,8 @@
 #endif
 
 
-#define ngx_stream_var_isspace(c)                                             \
-    ((c) == ' ' || (c) == '\t' || (c) == CR || (c) == LF)                     \
+#define ngx_stream_var_isspace(c)                                            \
+    ((c) == ' ' || (c) == '\t' || (c) == CR || (c) == LF)
 
 
 typedef enum {
@@ -719,7 +719,8 @@ ngx_stream_var_create_variable(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     v = ngx_stream_add_variable(cf, &value[1],
-                         NGX_STREAM_VAR_CHANGEABLE|NGX_STREAM_VAR_NOCACHEABLE);
+                                NGX_STREAM_VAR_CHANGEABLE
+                                |NGX_STREAM_VAR_NOCACHEABLE);
     if (v == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -1040,7 +1041,7 @@ ngx_stream_var_cache_random(ngx_stream_session_t *s,
 
 
 static ngx_int_t
-ngx_stream_var_find_rule(ngx_stream_session_t *s, 
+ngx_stream_var_find_rule(ngx_stream_session_t *s,
     ngx_stream_var_variable_t *var, ngx_stream_var_rule_t **rule)
 {
     ngx_stream_var_rule_t      *rules;
@@ -1063,7 +1064,7 @@ ngx_stream_var_find_rule(ngx_stream_session_t *s,
         if (rules[i].filter) {
 
             if (ngx_stream_complex_value(s, rules[i].filter, &val)
-                    != NGX_OK)
+                != NGX_OK)
             {
                 return NGX_ERROR;
             }
@@ -1731,6 +1732,7 @@ ngx_stream_var_utils_filter_params(ngx_stream_session_t *s,
         key.data = p;
         if (eq == NULL) {
             key.len = next_sep - p;
+
         } else {
             key.len = eq - p;
         }
@@ -1776,6 +1778,7 @@ ngx_stream_var_utils_filter_params(ngx_stream_session_t *s,
             if (!first) {
                 len += 1; /* separator */
             }
+
             len += next_sep - p;
             first = 0;
         }
@@ -1783,6 +1786,7 @@ ngx_stream_var_utils_filter_params(ngx_stream_session_t *s,
         if (next_sep == last) {
             break;
         }
+
         p = next_sep + 1;
     }
 
@@ -1820,6 +1824,7 @@ ngx_stream_var_utils_filter_params(ngx_stream_session_t *s,
         key.data = p;
         if (eq == NULL) {
             key.len = next_sep - p;
+
         } else {
             key.len = eq - p;
         }
@@ -1864,6 +1869,7 @@ ngx_stream_var_utils_filter_params(ngx_stream_session_t *s,
             if (!first) {
                 *dst++ = key_elts[1].data[0];
             }
+
             ngx_memcpy(dst, p, next_sep - p);
             dst += next_sep - p;
             first = 0;
@@ -1872,6 +1878,7 @@ ngx_stream_var_utils_filter_params(ngx_stream_session_t *s,
         if (next_sep == last) {
             break;
         }
+
         p = next_sep + 1;
     }
 
@@ -2401,7 +2408,7 @@ ngx_stream_var_exec_position(ngx_stream_session_t *s,
 
     } else {
         found = ngx_stream_var_utils_strlstrn(val.data, val.data + val.len,
-                                            sub.data, sub.len - 1);
+                                              sub.data, sub.len - 1);
     }
 
     if (found != NULL) {
@@ -2717,7 +2724,8 @@ ngx_stream_var_exec_extract_param(ngx_stream_session_t *s,
             p = ngx_strlcasestrn(p, last - 1, name.data, name.len - 1);
 
         } else {
-            p = ngx_stream_var_utils_strlstrn(p, last - 1, name.data, name.len - 1);
+            p = ngx_stream_var_utils_strlstrn(p, last - 1, name.data,
+                                              name.len - 1);
         }
 
         if (p == NULL) {
@@ -2846,7 +2854,9 @@ ngx_stream_var_exec_extract_json(ngx_stream_session_t *s,
             subkey.len--;
         }
 
-        while (subkey.len && ngx_stream_var_isspace(subkey.data[subkey.len - 1])) {
+        while (subkey.len
+               && ngx_stream_var_isspace(subkey.data[subkey.len - 1]))
+        {
             subkey.len--;
         }
 
@@ -4090,7 +4100,7 @@ ngx_stream_var_exec_floor(ngx_stream_session_t *s,
 
     if (decimal_point == (ngx_int_t) (num_len - 1)) {
         ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                        "var: decimal point at the end of number");
+                      "var: decimal point at the end of number");
         return NGX_ERROR;
     }
 
@@ -4398,7 +4408,7 @@ ngx_stream_var_exec_rand(ngx_stream_session_t *s,
 
         if (str.len == 0) {
             ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                        "var: empty argument for \"rand\"");
+                          "var: empty argument for \"rand\"");
             return NGX_ERROR;
         }
 
@@ -4406,7 +4416,7 @@ ngx_stream_var_exec_rand(ngx_stream_session_t *s,
 
         if (end == NGX_ERROR || start > end) {
             ngx_log_error(NGX_LOG_WARN, s->connection->log, 0,
-                        "var: invalid end value for \"rand\"");
+                          "var: invalid end value for \"rand\"");
             return NGX_ERROR;
         }
 
@@ -4739,7 +4749,8 @@ static ngx_int_t
 ngx_stream_var_exec_escape_uri_component(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, ngx_stream_var_rule_t *rule)
 {
-    return ngx_stream_var_utils_escape_uri(s, v, rule, NGX_ESCAPE_URI_COMPONENT);
+    return ngx_stream_var_utils_escape_uri(s, v, rule,
+                                           NGX_ESCAPE_URI_COMPONENT);
 }
 
 
@@ -5153,7 +5164,8 @@ ngx_stream_var_exec_gmt_time(ngx_stream_session_t *s,
     }
 
     if (str.len == 9 && ngx_strncmp(str.data, "http_time", 9) == 0) {
-        p = ngx_pnalloc(s->connection->pool, sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1);
+        p = ngx_pnalloc(s->connection->pool,
+                        sizeof("Mon, 28 Sep 1970 06:00:00 GMT") - 1);
         if (p == NULL) {
             return NGX_ERROR;
         }
@@ -5165,7 +5177,8 @@ ngx_stream_var_exec_gmt_time(ngx_stream_session_t *s,
     }
 
     if (str.len == 11 && ngx_strncmp(str.data, "cookie_time", 11) == 0) {
-        p = ngx_pnalloc(s->connection->pool, sizeof("Thu, 18-Nov-10 11:27:35 GMT") - 1);
+        p = ngx_pnalloc(s->connection->pool,
+                        sizeof("Thu, 18-Nov-10 11:27:35 GMT") - 1);
         if (p == NULL) {
             return NGX_ERROR;
         }
@@ -5182,7 +5195,9 @@ ngx_stream_var_exec_gmt_time(ngx_stream_session_t *s,
         return NGX_ERROR;
     }
 
-    if (str.len == sizeof("%s") - 1 && str.data[0] == '%' && str.data[1] == 's') {
+    if (str.len == sizeof("%s") - 1 && str.data[0] == '%'
+        && str.data[1] == 's')
+    {
         v->data = ngx_pnalloc(s->connection->pool, NGX_TIME_T_LEN);
         if (v->data == NULL) {
             return NGX_ERROR;
@@ -5260,7 +5275,9 @@ ngx_stream_var_exec_local_time(ngx_stream_session_t *s,
         return NGX_ERROR;
     }
 
-    if (str.len == sizeof("%s") - 1 && str.data[0] == '%' && str.data[1] == 's') {
+    if (str.len == sizeof("%s") - 1 && str.data[0] == '%'
+        && str.data[1] == 's')
+    {
         v->data = ngx_pnalloc(s->connection->pool, NGX_TIME_T_LEN);
         if (v->data == NULL) {
             return NGX_ERROR;
