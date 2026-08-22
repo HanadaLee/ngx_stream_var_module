@@ -1,9 +1,14 @@
+# Repository Moved
+
+**This module has been migrated to [ngx_var_module](https://git.hanada.info/hanada/ngx_var_module) / [ngx_var_module](https://github.com/HanadaLee/ngx_var_module). Please use the new repository for future development and updates.**
+
 # Name
 
 `ngx_stream_var_module` is a nginx stream module that dynamically assigns new variables through predefined functions.
 
 # Table of Content
 
+- [Repository Moved](#repository-moved)
 - [Name](#name)
 - [Table of Content](#table-of-content)
 - [Status](#status)
